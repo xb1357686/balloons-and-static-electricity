@@ -245,6 +245,11 @@ define( function( require ) {
       return ( this.getCenter().x > model.playArea.atNearWall && this.getCenter().x < model.playArea.atWall );
     },
 
+    nearRightSideOfPlayArea: function() {
+      var model = this.balloonsAndStaticElectricityModel;
+      return ( this.getCenter().x > model.playArea.atNearRightEdgeOfPlayArea && this.getCenter().x < model.playArea.atRightEdgeOfPlayArea );
+    },
+
     inUpperRightOfPlayArea: function() {
       var locationBounds = this.balloonsAndStaticElectricityModel.playArea.getPointBounds( this.getCenter() );
 
@@ -335,7 +340,22 @@ define( function( require ) {
 
       // direction string to be returned
       var direction;
-      if ( diffX > 0 && diffY > 0 ) {
+      // cardinal directions
+      if ( diffX === 0 && diffY > 0 ) {
+        direction = BalloonDirectionEnum.DOWN;
+      }
+      else if ( diffX === 0 && diffY < 0 ) {
+        direction = BalloonDirectionEnum.UP;
+      }
+      else if ( diffY === 0 && diffX > 0 ) {
+        direction = BalloonDirectionEnum.RIGHT;
+      }
+      else if ( diffY === 0 && diffX < 0 ) {
+        direction = BalloonDirectionEnum.LEFT;
+      }
+
+      // primary intercardinal directions
+      else if ( diffX > 0 && diffY > 0 ) {
         // charge is up and to the right
         direction = BalloonDirectionEnum.DOWN_RIGHT;
       }
@@ -543,7 +563,7 @@ define( function( require ) {
         // only announce that we are on the sweater if we are moving left
         return BalloonLocationEnum.ON_SWEATER;
       }
-      else if ( playArea.atWall === centerX && this.balloonsAndStaticElectricityModel.wall.isVisible ) {
+      else if ( playArea.atWall === centerX && this.balloonsAndStaticElectricityModel.wall.isVisibleProperty.get() ) {
         return BalloonLocationEnum.AT_WALL;
       }
       else {

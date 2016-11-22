@@ -27,15 +27,6 @@ define( function( require ) {
   var MANY_RANGE = new Range( 40, 57 );
   var MAX_BALLOON_CHARGE = -57;
 
-  var KEY_S = 83; // keycode for 's'
-  var KEY_W = 87; // keyvode for 'w'
-  var KEY_A = 65; // keycode for 'a'
-  var KEY_D = 68; // keycode for 'd'
-  var KEY_LEFT = 37; // left arrow key
-  var KEY_RIGHT = 39; // right arrow key
-  var KEY_UP = 38; // up arrow key
-  var KEY_DOWN = 40; // down arrow key
-
   // strings
   var balloonDescriptionPatternString = '{0} {1} {2}'; // location, charge, interaction cue
   var balloonGrabbedDescriptionPatternString = '{0} {1} {2} {3}'; // grabbed, location, charge, interaction cue 
@@ -151,22 +142,21 @@ define( function( require ) {
   var movesToObjectPatternString = 'Moves {0} towards {1}.';
 
   // interaction descriptions
-  var upTowardsTopString = 'Up. Towards top.';
-  var leftTowardsSweaterString = 'Left. Towards sweater.';
-  var downTowardsBottomString = 'Down. Towards bottom.';
-  var rightTowardsWallString = 'Right. Towards wall.';
-  var rightTowardsRightSideOfPlayAreaString = 'Right. Towards right side of play area.';
+  var movementDirectionPatternString = '{0} {1}';
 
-  var closerToTopString = 'Up. Closer to top.';
-  var closerToSweaterString = 'Left. Closer to sweater.';
-  var closerToBottomString = 'Down. Closer to bottom.';
-  var closerToWallString = 'Right. Closer to wall.';
-  var closerToRightSideString = 'Right. Closer to right side of play area.';
+  // // towards descriptions
+  // var towardsTopString = 'Towards top.';
+  // var towardsSweaterString = 'Towards sweater.';
+  // var towardsBottomString = 'Towards bottom.';
+  // var towardsWallString = 'Towards wall.';
+  // var towardsRightSideOfPlayArea = 'Towards right side of play area';
 
-  var upString = 'Up.';
-  var leftString = 'Left.';
-  var downString = 'Down.';
-  var rightString = 'Right.';
+  // closer descriptions
+  // var closerToTopString = 'Closer to top.';
+  // var closerToSweaterString = 'Closer to sweater.';
+  // var closerToBottomString = 'Closer to bottom.';
+  // var closerToWallString = 'Closer to wall.';
+  // var closerToRightSideString = 'Closer to right side of play area.';
 
   var morePairsOfChargesStringPattern = 'More pairs of charges {0}.';
 
@@ -187,6 +177,7 @@ define( function( require ) {
 
   var atCenterOfPlayAreaString = 'At center of play area.';
   var onRightSideOfPlayAreaString = 'On right side of play area.';
+  var nearRightSideOfPlayAreaString = 'Near right side of play area.';
 
   var balloonPicksUpMoreChargesString = 'Balloon picks up more negative charges';
   var againMoreChargesString = 'Again, more negative charges.';
@@ -274,7 +265,17 @@ define( function( require ) {
     this.sKeyPressedCount = 0;
     this.dKeyPressedCount = 0;
 
+    // @private - tracks the number of times the user has moved the balloon up/left/down/right
+    // the number count determines the verbosity of descriptions
+    this.movementCountMap = {
+      RIGHT: 0,
+      LEFT: 0,
+      UP: 0,
+      DOWN: 0
+    };
+
     // @private - track the current bounds and state of the balloon
+    this.direction = null;
     this.balloonBounds = this.model.playArea.getPointBounds( balloon.getCenter() );
     this.balloonOnSweater = balloon.onSweater();
     this.transitionedToNewArea = false; // true when balloon moves across sweater
@@ -288,6 +289,80 @@ define( function( require ) {
   balloonsAndStaticElectricity.register( 'BalloonDescriber', BalloonDescriber );
 
   return inherit( Object, BalloonDescriber, {
+
+    getMovementDescription: function( direction ) {
+
+      // final string to return
+      var movementDescription;
+
+      // string describing object that the balloon is moving towards
+      var towardsObjectString;
+
+      // string describing the object that the balloon is moving closer to
+      var closerToObjectString;
+
+      var directionString = StringMaps.DIRECTION_MAP[ direction ];
+
+      // if moving to the right, wew need a description for the wall dependent on its
+      // visibility
+      var towardsDirection = direction;
+      if ( direction === BalloonDirectionEnum.RIGHT ) {
+        if ( this.wall.isVisibleProperty.get() ) {
+          towardsDirection = BalloonDirectionEnum.RIGHT_WALL;
+        }
+        else {
+          towardsDirection = BalloonDirectionEnum.RIGHT_NO_WALL;
+        }
+      }
+
+      if ( this.balloon.onSweater() ) {
+
+        // if the balloon is on the sweater, only use the direction string
+        movementDescription = directionString;
+      }
+      else if ( this.movementCountMap[ direction ] === 0 ) {
+        towardsObjectString = StringMaps.TOWARDS_OBJECT_MAP[ towardsDirection ];
+        movementDescription = StringUtils.format( movementDirectionPatternString, directionString, towardsObjectString );
+      }
+      else if ( this.movementCountMap[ direction ] < 2 ) {
+        closerToObjectString = StringMaps.CLOSER_OBJECT_MAP[ towardsDirection ];
+        movementDescription = StringUtils.format( movementDirectionPatternString, directionString, closerToObjectString );
+      }
+      else {
+        movementDescription = directionString;
+      }
+
+      return movementDescription;
+    },
+
+    getDirection: function( location, oldLocation ) {
+      var delta = location.minus( oldLocation );
+      var direction; // string
+
+      if ( delta.x > 0 ) {
+        direction = BalloonDirectionEnum.RIGHT;
+      }
+      else if ( delta.x < 0 ) {
+        direction = BalloonDirectionEnum.LEFT;
+      }
+      else if ( delta.y > 0 ) {
+        direction = BalloonDirectionEnum.DOWN;
+      }
+      else if ( delta.y < 0 ) {
+        direction = BalloonDirectionEnum.UP;
+      }
+
+      return direction;
+    },
+
+    /**
+     * Update the counts for each interaction.
+     * 
+     * @return {[type]}
+     */
+    updateInteractionCounts: function() {
+      this.movementCountMap[ this.direction ] += 1;
+    },
 
     /**
      * Get a description of the balloon location.
@@ -352,14 +427,20 @@ define( function( require ) {
      * @param  {BalloonModel} balloon
      * @return {string}
      */
-    getBalloonProximityDescription: function( balloon ) {
+    getBalloonProximityDescription: function() {
+      var balloon = this.balloon;
+
       var proximityDescription;
       var balloonOnSweater = balloon.onSweater();
+
       if ( balloon.nearSweater() ) {
         proximityDescription = nearSweaterString;
       }
       else if ( balloon.nearWall() && this.model.wall.isVisibleProperty.get() ) {
         proximityDescription = nearWallString;
+      }
+      else if ( balloon.nearRightSideOfPlayArea() && !this.model.wall.isVisibleProperty.get() ) {
+        proximityDescription = nearRightSideOfPlayAreaString;
       }
       else if ( balloonOnSweater !== this.balloonOnSweater ) {
         if ( balloonOnSweater ) {
@@ -505,109 +586,38 @@ define( function( require ) {
      * @param  {Balloon} balloon
      * @return {string}
      */
-    getDraggingDescription: function( balloon, keyCode ) {
-      var draggingDescription;
+    getDraggingDescription: function( location, oldLocation ) {
 
-      var directionString;
-      if ( keyCode === KEY_W || keyCode === KEY_UP) {
-        if ( balloon.onSweater() ) {
-          directionString = upString;
-        }
-        else if ( this.wKeyPressedCount === 0 ) {
-          directionString = upTowardsTopString;
-        }
-        else if ( this.wKeyPressedCount < 2 ) {
-          directionString = closerToTopString;
-        }
-        else {
-          directionString = upString;
-        }
-        this.wKeyPressedCount++;
-      }
-      else if ( keyCode === KEY_S || keyCode === KEY_DOWN ) {
-        if ( balloon.onSweater() ) {
-          directionString = downString;
-        }
-        else if ( this.sKeyPressedCount === 0 ) {
-          directionString = downTowardsBottomString;
-        }
-        else if ( this.sKeyPressedCount < 2 ) {
-          directionString = closerToBottomString;
-        }
-        else {
-          directionString = downString;
-        }
-        this.sKeyPressedCount++;
-      }
-      else if ( keyCode === KEY_A || keyCode === KEY_LEFT ) {
-        if ( balloon.onSweater() ) {
-          directionString = leftString;
-        }
-        else if ( this.aKeyPressedCount === 0 ) {
-          directionString = leftTowardsSweaterString;
-        }
-        else if ( this.aKeyPressedCount < 2 ) {
-          directionString = closerToSweaterString;
-        }
-        else {
-          directionString = leftString;
-        }
-        this.aKeyPressedCount++;
-      }
-      else if ( keyCode === KEY_D || keyCode === KEY_RIGHT ) {
-        if ( balloon.onSweater() ) {
-          directionString = rightString;
-        }
-        else if ( this.dKeyPressedCount === 0 ) {
-          if ( this.model.wall.isVisibleProperty.get() ) {
-            directionString = rightTowardsWallString;
-          }
-          else {
-            directionString = rightTowardsRightSideOfPlayAreaString;
-          }
-        }
-        else if ( this.dKeyPressedCount < 2 ) {
-          if ( this.model.wall.isVisibleProperty.get() ) {
-            directionString = closerToWallString;
-          }
-          else {
-            directionString = closerToRightSideString;
-          }
-        }
-        else {
-          directionString = rightString;
-        }
-        this.dKeyPressedCount++;
-      }
+      // get direction of movement based on the change in position
+      var direction = this.getDirection( location, oldLocation );
+      this.direction = direction;
 
-      // TODO: When do key counds need to be reset?
-      if ( this.keyCountsNeedToBeReset() ) {
-        this.resetKeyCounts();
-      }
+      var directionMovementDescription = this.getMovementDescription( direction );
+
+      var proximityString = this.getBalloonProximityDescription();
 
       if ( this.balloonOnSweater ) {
 
         // this will be true on the first rub, after user hits sweater the first time
-        var onSweaterDescription = this.getSweaterRubDescription( balloon );
+        var onSweaterDescription = this.getSweaterRubDescription( this.balloon );
       }
-      if ( balloon.touchingWall() ) {
-        var atWallDescription = this.getWallRubDescription( balloon );
+      if ( this.balloon.touchingWall() ) {
+        var atWallDescription = this.getWallRubDescription( this.balloon );
       }
-      if ( balloon.touchingWall() !== this.balloonTouchingWall ) {
-        if ( !balloon.touchingWall() && this.balloon.chargeProperty.get() < 0 ) {
+      if ( this.balloon.touchingWall() !== this.balloonTouchingWall ) {
+        if ( !this.balloon.touchingWall() && this.balloon.chargeProperty.get() < 0 ) {
 
           // the balloon is leaving the wall, so describe the change in induced charge
-          var leavingWallDescription = this.getLeavingWallDescription( balloon );
+          var leavingWallDescription = this.getLeavingWallDescription( this.balloon );
         }
-        this.balloonTouchingWall = balloon.touchingWall();
+        this.balloonTouchingWall = this.balloon.touchingWall();
       }
 
-      var newBounds = this.model.playArea.getPointBounds( balloon.getCenter() );
-      if ( newBounds !== this.balloonBounds || balloon.getBoundaryObject() ) {
+      var newBounds = this.model.playArea.getPointBounds( this.balloon.getCenter() );
+      if ( newBounds !== this.balloonBounds || this.balloon.getBoundaryObject() ) {
         this.balloonBounds = newBounds;
-        var locationString = this.getBalloonLocationDescription( balloon, true );
+        var locationString = this.getBalloonLocationDescription( this.balloon, true );
       }
-      var proximityString = this.getBalloonProximityDescription( balloon );
 
       var string1 = '';
       var string2 = '';
@@ -615,29 +625,29 @@ define( function( require ) {
       var string4 = '';
       var string5 = '';
       var string6 = '';
-      if ( directionString && this.balloonLocation !== balloon.locationProperty.get() ) {
-        string1 = directionString;
-      }
-      if ( onSweaterDescription && balloon.onSweater() ) {
-
-        // if the balloon moves off the sweater, we do not want to hear this
-        string2 = onSweaterDescription;
+      if ( directionMovementDescription && this.balloonLocation !== this.balloon.locationProperty.get() ) {
+        string1 = directionMovementDescription;
       }
       if ( proximityString ) {
-        string3 = proximityString;
+        string2 = proximityString;
       }
-      if ( locationString && !balloon.onSweater() ) {
+      if ( onSweaterDescription && this.balloon.onSweater() ) {
+
+        // if the balloon moves off the sweater, we do not want to hear this
+        string3 = onSweaterDescription;
+      }
+      if ( locationString && !this.balloon.onSweater() ) {
         string4 = locationString;
       }
-      if ( atWallDescription && this.balloonLocation !== balloon.locationProperty.get() ) {
+      if ( atWallDescription && this.balloonLocation !== this.balloon.locationProperty.get() ) {
         string5 = atWallDescription;
       }
       if ( leavingWallDescription ) {
         string6 = leavingWallDescription;
       }
 
-      this.balloonLocation = balloon.locationProperty.get();
-      draggingDescription = StringUtils.format( balloonDragDescriptionPatternString, string1, string2, string3, string4, string5, string6 );
+      this.balloonLocation = this.balloon.locationProperty.get();
+      var draggingDescription = StringUtils.format( balloonDragDescriptionPatternString, string1, string2, string3, string4, string5, string6 );
       return draggingDescription;
     },
 
@@ -823,10 +833,12 @@ define( function( require ) {
      * Reset all key counters used for hysteresis when checking balloon
      */
     resetKeyCounts: function() {
-      this.aKeyPressedCount = 0;
-      this.wKeyPressedCount = 0;
-      this.sKeyPressedCount = 0;
-      this.dKeyPressedCount = 0;
+      var self = this;
+      for ( var key in self.movementCountMap ) {
+        if ( self.movementCountMap.hasOwnProperty( key ) ) {
+          self.movementCountMap[ key ] = 0;
+        }
+      }
     },
 
     /**
@@ -834,10 +846,7 @@ define( function( require ) {
      * @public
      */
     reset: function() {
-      this.aKeyPressedCount = 0;
-      this.wKeyPressedCount = 0;
-      this.sKeyPressedCount = 0;
-      this.dKeyPressedCount = 0;
+      this.resetKeyCounts();
 
       this.balloonBounds = this.model.playArea.getPointBounds( this.balloon.getCenter() );
       this.balloonOnSweater = this.balloon.onSweater();
@@ -926,11 +935,19 @@ define( function( require ) {
      * @return {boolean}
      */
     keyCountsNeedToBeReset: function() {
-      var countsTooHigh =
-        this.dKeyPressedCount > 5 ||
-        this.sKeyPressedCount > 5 ||
-        this.aKeyPressedCount > 5 ||
-        this.wKeyPressedCount > 5;
+
+      var countsTooHigh = false;
+      var self = this;
+
+      // key counts need to be reset if any of of the counters are greater than 5
+      for ( var key in this.movementCountMap ) {
+        if ( self.movementCountMap.hasOwnProperty( key ) ) {
+
+          if ( self.movementCountMap[ key ] > 5 ) {
+            countsTooHigh = true;
+          }
+        }
+      }
 
       return countsTooHigh || this.transitionedToNewArea;
     },

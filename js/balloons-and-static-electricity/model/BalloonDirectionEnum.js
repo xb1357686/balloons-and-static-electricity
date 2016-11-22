@@ -15,6 +15,8 @@ define( function( require ) {
   var BalloonDirectionEnum = {
     LEFT: 'LEFT',
     RIGHT: 'RIGHT',
+    RIGHT_WALL: 'RIGHT_WALL',
+    RIGHT_NO_WALL: 'RIGHT_NO_WALL',
     UP: 'UP',
     DOWN: 'DOWN',
     UP_LEFT: 'UP_LEFT',

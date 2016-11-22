@@ -61,7 +61,7 @@ define( function( require ) {
       if ( BalloonsAndStaticElectricityQueryParameters.showLiveOutput ) {
         this.printAlert( textContent );
       }
-      this.assertiveElement.textContent = textContent;
+      this.setTextContent( this.assertiveElement, textContent );
     },
 
     /**
@@ -74,7 +74,7 @@ define( function( require ) {
       if ( BalloonsAndStaticElectricityQueryParameters.showLiveOutput ) {
         this.printAlert( textContent );
       }
-      this.politeElement.textContent = textContent;
+      this.setTextContent( this.politeElement, textContent );
     },
 
     /**
@@ -88,7 +88,7 @@ define( function( require ) {
       if ( BalloonsAndStaticElectricityQueryParameters.showLiveOutput ) {
         this.printAlert( textContent );
       }
-      this.assertiveAlertElement.textContent = textContent;
+      this.setTextContent( this.assertiveAlertElement, textContent );
     },
 
     /**
@@ -102,7 +102,20 @@ define( function( require ) {
       if ( BalloonsAndStaticElectricityQueryParameters.showLiveOutput ) {
         this.printAlert( textContent );
       }
-      this.politeStatusElement.textContent = textContent;
+      this.setTextContent( this.politeStatusElement, textContent );
+    },
+
+    /**
+     * Set the text content for an alert element with the given text content.  
+     * Checks for equality of old content first to avoid setting of content continuously.
+     * 
+     * @param {DOMElement} alertElement
+     * @param {string} textContent
+     */
+    setTextContent: function( alertElement, textContent ) {
+      if ( alertElement.textContent !== textContent ) {
+        alertElement.textContent = textContent;
+      }
     },
 
     /**

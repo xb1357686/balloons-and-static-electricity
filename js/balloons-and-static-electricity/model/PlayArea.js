@@ -37,6 +37,7 @@ define( function( require ) {
     this.atNearWall = 577;
     this.atSweater = 393;
     this.atRightEdgeOfPlayArea = 701;
+    this.atNearRightEdgeOfPlayArea = 625;
     this.atLeftEdgeOfPlayArea = 67;
 
     // collection of critical y points in the play area

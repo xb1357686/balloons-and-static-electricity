@@ -247,8 +247,12 @@ define( function( require ) {
     } );
 
     this.draggableNode.keyUpEmitter.addListener( function( event ) {
+
       if ( self.draggableNode.draggableKeyUp( event.keyCode ) ) {
-        self.ariaHerald.announceAssertive( model.balloonDescriber.getDraggingDescription( self.model, event.keyCode ) );
+
+        // when the user releases a key, we want to increment the interaction count
+        model.balloonDescriber.updateInteractionCounts( event.keyCode );
+        // self.ariaHerald.announceAssertive( model.balloonDescriber.getDraggingDescription( self.model, event.keyCode ) );
       }
     } );
 
@@ -308,7 +312,7 @@ define( function( require ) {
     // TODO: Balloon 'string' removevd for now, we gitare investigating ways of removing confusion involving buoyant forces
     // see https://github.com/phetsims/balloons-and-static-electricity/issues/127
     //changes visual position
-    model.locationProperty.link( function updateLocation( location ) {
+    model.locationProperty.link( function updateLocation( location, oldLocation ) {
       self.translation = location;
       // customShape = new Shape();
       // customShape.moveTo( model.width / 2, model.height - 2 );
@@ -318,6 +322,14 @@ define( function( require ) {
       // a11y - update the description when the location changes (only found with cursor keys)
       var locationDescription = model.balloonDescriber.getDescription( model, model.isDraggedProperty.get() );
       self.setDescription( locationDescription );
+
+      // a11y - get the interaction alert as the user interacts with the balloon
+      if ( model.isDraggedProperty.get() ) {
+        // self.ariaHerald.announceAssertive( model.balloonDescriber.getDraggingDescription( self.model, event.keyCode ) );
+
+        var interactionAlert = model.balloonDescriber.getDraggingDescription( location, oldLocation );
+        self.ariaHerald.announcePolite( interactionAlert );
+      }
 
     } );
 
