@@ -63,7 +63,7 @@ define( function( require ) {
       },
       onTab: function() {}, // optional function to call when user 'tabs' away
       restrictLocation: function() {}, // fires during the drag
-      positionDelta: 5, // change in model coordinates when user presses directional key, in model coordinates
+      positionDelta: 10, // change in model coordinates when user presses directional key, in model coordinates
       dragBounds: Bounds2.EVERYTHING, // drag bounds (like MovableDragHandler) in model coordinate frame
       modelViewTransform: ModelViewTransform2.createIdentity(), // {ModelViewTransform2} defaults to identity
       focusable: true,
