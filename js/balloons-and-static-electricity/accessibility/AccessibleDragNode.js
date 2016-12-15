@@ -19,15 +19,11 @@ define( function( require ) {
   var AccessibleNode = require( 'BALLOONS_AND_STATIC_ELECTRICITY/balloons-and-static-electricity/accessibility/AccessibleNode' );
 
   // constants
-  var KEY_TAB = 9;
   var KEY_S = 83; // keycode for 's'
   var KEY_W = 87; // keyvode for 'w'
   var KEY_A = 65; // keycode for 'a'
   var KEY_D = 68; // keycode for 'd'
   var KEY_J = 74; // keycode for 'j'
-  var KEY_C = 67; // keycode for 'j'
-  var KEY_N = 78; // keycode for 'j'
-  var KEY_SHIFT = 16; // shift key down  
   var KEY_LEFT = 37; // left arrow key
   var KEY_RIGHT = 39; // right arrow key
   var KEY_UP = 38; // up arrow key
@@ -52,44 +48,17 @@ define( function( require ) {
       events: {
         keydown: function( event ) {
 
-          // if key down is for dragging, prevent default
-          if ( self.draggableKeyUp( event.keyCode ) ) {
-            // required for VoiceOver with Safari
+          // if key is down for dragging, prevent default
+          // this is required for VO, which tries to also move the virtual cursor
+          if ( self.isDraggingKey( event.keyCode ) ) {
             event.preventDefault();
+            self.dragWithKey( event );
           }
-
-          // update the key state on down
-          self.keyState[ event.keyCode || event.which ] = {
-            isKeyDown: true,
-            keyEvent: event
-          };
-
           options.onKeyDown( event );
-
-          // notify that key state changed
-          self.keyStateChangedEmitter.emit1( event );
-          self.keyDownEmitter.emit1( event );
         },
         keyup: function( event ) {
-
-          // update the key state on down
-          self.keyState[ event.keyCode || event.which ] = {
-            isKeyDown: false,
-            keyEvent: event
-          };
-
+          self.keyUpEmitter.emit1( event );
           options.onKeyUp( event );
-
-          // notify that key state changed
-          if ( self.keyState[ KEY_J ] ) {
-            if ( !self.keyState[ KEY_J ].isKeyDown ) {
-              self.keyStateChangedEmitter.emit1( event );
-              self.keyUpEmitter.emit1( event );
-            }
-            else {
-              self.balloonJumpingEmitter.emit1( event );
-            }
-          }
         }
       },
       onTab: function() {}, // optional function to call when user 'tabs' away
@@ -141,6 +110,38 @@ define( function( require ) {
 
   return inherit( AccessibleNode, AccessibleDragNode, {
 
+    dragWithKey: function( event ) {
+
+      var deltaX = 0;
+      var deltaY = 0;
+
+      if ( event.keyCode === ( KEY_A ) || event.keyCode === ( KEY_LEFT ) ) {
+        deltaX = -this._positionDelta;
+      }
+      if ( event.keyCode === ( KEY_D ) || event.keyCode === ( KEY_RIGHT ) ) {
+        deltaX = this._positionDelta;
+      }
+      if ( event.keyCode === ( KEY_W ) || event.keyCode === ( KEY_UP ) ) {
+        deltaY = -this._positionDelta;
+      }
+      if ( event.keyCode === ( KEY_S ) || event.keyCode === ( KEY_DOWN ) ) {
+        deltaY = this._positionDelta;
+      }
+      if ( event.shiftKey ) {
+        deltaX *= 2;
+        deltaY *= 2;
+      }
+
+      var locationDelta = new Vector2( deltaX, deltaY );
+      var newLocation = this.locationProperty.get().copy().plus( locationDelta );
+      newLocation = this._dragBounds.closestPointTo( newLocation );
+
+      // update the location if it is different
+      if ( !newLocation.equals( this.locationProperty.value ) ) {
+        this.locationProperty.set( newLocation );
+      }
+    },
+
     /**
      * Set the position delta for the draggable element when a key is pressed
      *
@@ -150,75 +151,13 @@ define( function( require ) {
       this._positionDelta = newDelta;
     },
 
-    step: function() {
-
-      var self = this;
-
-      // if tab is down, we may want to do something specific (like drop the element or focus something other than what
-      // is in the default navigation order )
-      if ( self.keyState[ KEY_TAB ] && self.keyState[ KEY_TAB ].isKeyDown ) {
-        self._onTab( self.keyState[ KEY_TAB ].keyEvent );
-
-        // keyup is fired immediately for tab, so now update the keystate
-        self.keyState[ KEY_TAB ].isKeyDown = false;
-      }
-
-      var deltaX = 0;
-      var deltaY = 0;
-
-      // TODO: This is specific to BASE... hotkeys need to be generalized
-      if ( self.isKeyDown( KEY_J ) ) {
-
-        // we have begun a jump interaction, here are the additional key presses
-        if ( self.isKeyDown( KEY_S ) ) {
-          self.locationProperty.set( new Vector2( 375 - 67, self.locationProperty.get().y ) );
-        }
-        if ( self.isKeyDown( KEY_W ) ) {
-          self.locationProperty.set( new Vector2( 621 - 67, self.locationProperty.get().y ) );
-        }
-        if ( self.isKeyDown( KEY_C ) ) {
-          self.locationProperty.set( new Vector2( 507 - 67, self.locationProperty.get().y ) );
-        }
-        if ( self.isKeyDown( KEY_N ) ) {
-          self.locationProperty.set( new Vector2( 577 - 67, self.locationProperty.get().y ) );
-        }
-      }
-      else {
-        if ( self.isKeyDown( KEY_A ) || self.isKeyDown( KEY_LEFT ) ) {
-          deltaX = -self._positionDelta;
-        }
-        if ( self.isKeyDown( KEY_D ) || self.isKeyDown( KEY_RIGHT ) ) {
-          deltaX = self._positionDelta;
-        }
-        if ( self.isKeyDown( KEY_W ) || self.isKeyDown( KEY_UP ) ) {
-          deltaY = -self._positionDelta;
-        }
-        if ( self.isKeyDown( KEY_S ) || self.isKeyDown( KEY_DOWN ) ) {
-          deltaY = self._positionDelta;
-        }
-        if ( self.isKeyDown( KEY_SHIFT ) ) {
-          deltaX *= 2;
-          deltaY *= 2;
-        }
-      }
-
-      var locationDelta = new Vector2( deltaX, deltaY );
-      var newLocation = self.locationProperty.get().plus( locationDelta );
-      newLocation = self._dragBounds.closestPointTo( newLocation );
-
-      // update the location if it is different
-      if ( !newLocation.equals( self.locationProperty.value ) ) {
-        self.locationProperty.set( newLocation );
-      }
-    },
-
     /**
      * Check to see if the key up was one of the keys that drags the element.
      *
      * @param {number} keyCode - event key code on the 'keyup' event
      * @return {boolean}
      */
-    draggableKeyUp: function( keyCode ) {
+    isDraggingKey: function( keyCode ) {
       return ( keyCode === KEY_S || keyCode === KEY_W || keyCode === KEY_A || keyCode === KEY_D || 
                 keyCode === KEY_LEFT || keyCode === KEY_RIGHT || keyCode === KEY_UP || keyCode === KEY_DOWN );
     },

@@ -265,17 +265,23 @@ define( function( require ) {
     } );
 
     this.draggableNode.keyUpEmitter.addListener( function( event ) {
-      if ( self.draggableNode.draggableKeyUp( event.keyCode ) ) {
+      if ( self.draggableNode.isDraggingKey( event.keyCode ) ) {
         // on the next animation frame (after balloon has moved and picked up all charges)
         // announce the interaction in an alert
         model.announceInteraction = true;
       }
     } );
 
-    // when an interaction has ended, update the user with the results through an assertive alert  
-    model.interactionEndEmitter.addListener( function() {
-      self.ariaHerald.announceAssertive( model.balloonDescriber.getDraggingDescription( model.locationProperty.get(), model.oldLocation ) );
+    model.locationProperty.link( function( location, oldLocation ) {
+      if ( oldLocation && !location.equals( oldLocation ) ) {
+        self.ariaHerald.announceAssertive( model.balloonDescriber.getDraggingDescription( model.locationProperty.get(), model.oldLocation ) );
+      }
     } );
+
+    // when an interaction has ended, update the user with the results through an assertive alert  
+    // model.interactionEndEmitter.addListener( function() {
+      // self.ariaHerald.announceAssertive( model.balloonDescriber.getDraggingDescription( model.locationProperty.get(), model.oldLocation ) );
+    // } );
 
     this.draggableNode.balloonJumpingEmitter.addListener( function( event ) {
       self.ariaHerald.announceAssertive( model.balloonDescriber.getJumpingDescription( self.model, event.keyCode ) );
@@ -380,7 +386,7 @@ define( function( require ) {
      * @param  {number} dt
      */
     step: function( dt ) {
-      this.draggableNode.step( dt );
+      // this.draggableNode.step( dt );
     },
 
     /**

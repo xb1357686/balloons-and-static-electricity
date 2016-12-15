@@ -477,7 +477,6 @@ define( function( require ) {
         }
       }
 
-
       this.oldLocation = this.locationProperty.get().copy();
     },
 
