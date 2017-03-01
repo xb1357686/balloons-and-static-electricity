@@ -30,6 +30,8 @@ define( function( require ) {
   var BASEA11yStrings = require( 'BALLOONS_AND_STATIC_ELECTRICITY/balloons-and-static-electricity/BASEA11yStrings' );
   var balloonsAndStaticElectricity = require( 'BALLOONS_AND_STATIC_ELECTRICITY/balloonsAndStaticElectricity' );
   var Vector2 = require( 'DOT/Vector2' );
+  var AlertQueue = require( 'SCENERY/accessibility/AlertQueue' );
+  var AriaHerald = require( 'SCENERY_PHET/accessibility/AriaHerald' );
 
   // strings
   var balloonsAndStaticElectricityTitleString = require( 'string!BALLOONS_AND_STATIC_ELECTRICITY/balloons-and-static-electricity.title' );
@@ -54,6 +56,8 @@ define( function( require ) {
       layoutBounds: new Bounds2( 0, 0, 768, 504 ),
       accessibleContent: null
     } );
+
+    this.alertQueue = new AlertQueue();
 
     // @public - for now, we are testing whether accessible content can be contained in an article
     this.articleContainerNode = new Node( {
@@ -123,6 +127,52 @@ define( function( require ) {
       'yellow',
       tandem.createTandem( 'yellowBalloonNode' )
     );
+
+    this.alertQueue.utteranceEmitter.addListener( function( utterance ) {
+      AriaHerald.announceAssertive( utterance );
+    } );
+
+    // when the position changes, add an update to the queue
+    model.yellowBalloon.locationProperty.link( function() {
+
+      if ( model.yellowBalloon.onSweater() && !model.yellowBalloon.isDraggedProperty.get() ) {
+        self.alertQueue.addFunction( {
+          condition: function() { return true; }, 
+          utterance: 'Balloon is stuck to sweater!',
+          type: 'STUCK'
+        } );
+      }
+      if ( model.yellowBalloon.touchingWall() ) {
+        self.alertQueue.addFunction( {
+          condition: function() { return true; }, 
+          utterance: 'Balloon touching wall!',
+          type: 'TOUCHING_WALL'
+        } );
+      }
+      if ( model.yellowBalloon.touchingWall() && model.yellowBalloon.chargeProperty.get() < 0 ) {
+        self.alertQueue.addFunction( {
+          condition: function() { return true; }, 
+          utterance: 'Balloon stuck to wall!',
+          type: 'STUCK_TO_WALL'
+        } );
+      }
+      else {
+        self.alertQueue.addFunction( {
+          condition: function() { return true; }, 
+          utterance: 'Balloon position changed!',
+          type: 'MOVED'
+        } );
+      }
+    } );
+
+    model.yellowBalloon.chargeProperty.link( function() {
+      self.alertQueue.addFunction( {
+        condition: function() { return true; }, 
+        utterance: 'Balloon charge increased!',
+        type: 'CHARGE'
+      } );
+    } );
+
     var tetherAnchorPoint = new Vector2(
       model.yellowBalloon.locationProperty.get().x + 30, // a bit to the side of directly below the starting position
       this.layoutBounds.height + 50 // slightly below bottom of frame, amount was empirically determined

@@ -185,7 +185,7 @@ define( function( require ) {
     // TODO: Balloon 'string' removevd for now, we are investigating ways of removing confusion involving buoyant forces
     // see https://github.com/phetsims/balloons-and-static-electricity/issues/127
     //changes visual position
-    model.locationProperty.link( function updateLocation( location ) {
+    model.locationProperty.link( function updateLocation( location, oldLocation ) {
       self.translation = location;
       // tetherShape = new Shape();
       // tetherShape.moveTo( model.width / 2, model.height - 2 );
@@ -254,13 +254,13 @@ define( function( require ) {
     } );
 
     // when an interaction has ended, update the user with the results through an assertive alert  
-    model.interactionEndEmitter.addListener( function() {
-      AriaHerald.announceAssertive( model.balloonDescriber.getDraggingDescription( model.locationProperty.get(), model.oldLocation ) );
-    } );
+    // model.interactionEndEmitter.addListener( function() {
+    //   AriaHerald.announceAssertive( model.balloonDescriber.getDraggingDescription( model.locationProperty.get(), model.oldLocation ) );
+    // } );
 
-    this.accessibleDragNode.balloonJumpingEmitter.addListener( function( keyCode ) {
-      AriaHerald.announceAssertive( model.balloonDescriber.getJumpingDescription( self.model, keyCode ) );
-    } );
+    // this.accessibleDragNode.balloonJumpingEmitter.addListener( function( keyCode ) {
+    //   AriaHerald.announceAssertive( model.balloonDescriber.getJumpingDescription( self.model, keyCode ) );
+    // } );
 
     var accessibleButtonNode = new Node( {
       tagName: 'button', // representative type
@@ -293,7 +293,7 @@ define( function( require ) {
       self.setAccessibleHidden( !isVisible );
 
       var alertDescription = isVisible ? BASEA11yStrings.greenBalloonAddedString : BASEA11yStrings.greenBalloonRemovedString;
-      AriaHerald.announceAssertive( alertDescription );
+      // AriaHerald.announceAssertive( alertDescription );
     } );
 
     // the focus highlight changes color when grabbed
@@ -346,7 +346,7 @@ define( function( require ) {
       // made invisible
       if ( model.chargeProperty.get() < 0 && !isVisible && model.touchingWall() ) {
         var balloonDescription = model.balloonDescriber.getWallRemovedDescription( !isVisible );
-        AriaHerald.announceAssertive( balloonDescription );
+        // AriaHerald.announceAssertive( balloonDescription );
       }
     } );
   }
@@ -381,7 +381,7 @@ define( function( require ) {
 
       // anounce the release description
       var releaseDescription = this.model.balloonDescriber.getReleaseDescription();
-      AriaHerald.announcePolite( releaseDescription );
+      // AriaHerald.announcePolite( releaseDescription );
     }
   } );
 } );
