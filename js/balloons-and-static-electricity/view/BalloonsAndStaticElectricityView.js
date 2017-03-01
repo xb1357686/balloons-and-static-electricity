@@ -30,7 +30,7 @@ define( function( require ) {
   var BASEA11yStrings = require( 'BALLOONS_AND_STATIC_ELECTRICITY/balloons-and-static-electricity/BASEA11yStrings' );
   var balloonsAndStaticElectricity = require( 'BALLOONS_AND_STATIC_ELECTRICITY/balloonsAndStaticElectricity' );
   var Vector2 = require( 'DOT/Vector2' );
-  var AlertQueue = require( 'SCENERY/accessibility/AlertQueue' );
+  var AlertQueue = require( 'BALLOONS_AND_STATIC_ELECTRICITY/balloons-and-static-electricity/accessibility/AlertQueue' );
   var AriaHerald = require( 'SCENERY_PHET/accessibility/AriaHerald' );
 
   // strings
