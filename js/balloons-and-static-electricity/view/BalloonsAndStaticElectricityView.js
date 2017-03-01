@@ -31,7 +31,7 @@ define( function( require ) {
   var balloonsAndStaticElectricity = require( 'BALLOONS_AND_STATIC_ELECTRICITY/balloonsAndStaticElectricity' );
   var Vector2 = require( 'DOT/Vector2' );
   var AlertQueue = require( 'BALLOONS_AND_STATIC_ELECTRICITY/balloons-and-static-electricity/accessibility/AlertQueue' );
-  var AriaHerald = require( 'SCENERY_PHET/accessibility/AriaHerald' );  
+  var AriaHerald = require( 'SCENERY_PHET/accessibility/AriaHerald' );
 
   // strings
   var balloonsAndStaticElectricityTitleString = require( 'string!BALLOONS_AND_STATIC_ELECTRICITY/balloons-and-static-electricity.title' );
